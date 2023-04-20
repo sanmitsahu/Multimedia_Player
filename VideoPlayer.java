@@ -32,7 +32,7 @@ public class VideoPlayer {
         JFrame frame = new JFrame("Video Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(true);
-        frame.setSize(new Dimension(width, height));
+        frame.setSize(new Dimension(frameWidth, frameHeight));
         frame.setVisible(true);
 
         JLabel label = new JLabel();
