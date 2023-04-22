@@ -12,11 +12,11 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-public class VideoPlayer {
-
+public class VideoPlayer{
+    
     // default state - video playing
     static int isPause = 1;
-
+    
     public static void main(String[] args) {
         File file = new File("./InputVideo.rgb"); // name of the RGB video file
         int width = 480; // width of the video frames
@@ -27,6 +27,7 @@ public class VideoPlayer {
 
         int fps = 30; // frames per second of the video
         int numFrames = 6276; // number of frames in the video
+        
 
         // create the JFrame and JLabel to display the video
         JFrame frame = new JFrame("Video Display");
@@ -41,7 +42,7 @@ public class VideoPlayer {
 
         // left container displaying video structure
         JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new BorderLayout());
+        leftPanel.setLayout(new FlowLayout());
 
         JTextArea textArea = new JTextArea(20, 20);
         JScrollPane scrollableTextArea = new JScrollPane(textArea);
@@ -52,7 +53,11 @@ public class VideoPlayer {
         scrollableTextArea.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         scrollableTextArea.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
-
+/*JTextField skipTimeField = new JTextField(5);
+        JButton skipButton = new JButton("SKIP");
+        leftPanel.add(skipTimeField);
+        leftPanel.add(skipButton);*/
+        
         // right container displaying video playing
         JPanel rightPanel = new JPanel();
         rightPanel.setBounds(0,0, 2 * frameWidth / 3, frameHeight);
@@ -67,6 +72,7 @@ public class VideoPlayer {
         // bottom container displaying interactive buttons to play, pause, stop
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new FlowLayout());
+        
 
         JButton jb1 = new JButton("PLAY");
         JButton jb2 = new JButton("PAUSE");
@@ -86,6 +92,23 @@ public class VideoPlayer {
         bottomPanel.add(jb2);
         bottomPanel.add(jb3);
 
+
+        //skipButton = new JButton("Skip10");
+        //skipButton.setActionCommand("10");
+        //bottomPanel.add(skipButton);
+
+JButton jbSkip[];
+jbSkip = new JButton[10];
+JPanel buttonPanel = new JPanel();
+buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+for(int i1=5;i1<=50;i1+=5)
+{
+    jbSkip[(i1/5)-1] = new JButton("Skip "+i1+" seconds");
+    buttonPanel.add(jbSkip[(i1/5)-1]);
+    jbSkip[(i1/5)-1].setActionCommand(Integer.toString(i1));
+}
+
+
         // right container style
         rightPanel.add(labImage, BorderLayout.NORTH);
         rightPanel.add(bottomPanel, BorderLayout.CENTER);
@@ -93,15 +116,24 @@ public class VideoPlayer {
         rightPanel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
 
         // left container style
-        leftPanel.add(scrollableTextArea, BorderLayout.WEST);
+        
+
+        //leftPanel.add(scrollableTextArea, BorderLayout.WEST);
+        leftPanel.add(buttonPanel);
+        JSeparator separator = new JSeparator(JSeparator.VERTICAL);
+        separator.setPreferredSize(new Dimension(100, 600));
+        leftPanel.add(separator);
         leftPanel.add(rightPanel, BorderLayout.EAST);
+
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        frame.add(leftPanel);
+        frame.add(leftPanel, BorderLayout.WEST);
+        //frame.add(separator);
+        
         frame.setVisible(true);
 
-
+        
 
         // read the video file and display each frame
         int i = 0;
@@ -109,7 +141,7 @@ public class VideoPlayer {
             RandomAccessFile raf = new RandomAccessFile(file, "r");
             FileChannel channel = raf.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(width * height * 3);
-
+  
             do {
 
                 try {
@@ -117,6 +149,52 @@ public class VideoPlayer {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
+/*skipButton.addActionListener(new ActionListener() {
+    boolean printed=false;
+    public void actionPerformed(ActionEvent e) {
+        if(printed==false)
+            System.out.println(e.getActionCommand());
+        printed=true;
+        //String skipTimeStr = skipTimeField.getText();
+        
+        try {
+            String actionCommand = ((JButton) e.getSource()).getActionCommand();
+            System.out.println(actionCommand);
+
+            //String skipTimeStr="10";
+            int skipTime = Integer.parseInt(actionCommand);
+            int skipFrame = skipTime * fps;
+            long skipBytes = (long)skipFrame * width * height * 3;
+            channel.position(skipBytes);
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+    }
+});*/
+// action listener for all buttons
+ActionListener skipActionListener = new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+        // get the button that was pressed
+        JButton button = (JButton) e.getSource();
+        String actionCommand = ((JButton) e.getSource()).getActionCommand();
+        // check which button was pressed and skip to appropriate time
+        //if (button == jbSkip5) {
+            // skip 5 seconds
+            try {
+                int skipFrame = Integer.parseInt(actionCommand) * fps;
+            long skipBytes = (long)skipFrame * width * height * 3;
+            channel.position(skipBytes);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        //}
+    }
+};
+for(int i1=5;i1<=50;i1+=5)
+{
+    jbSkip[(i1/5)-1].addActionListener(skipActionListener);
+}
 
                 // if video is stopped repaint frame to empty and re-position video start
                 if (isPause == -1) {
@@ -181,4 +259,5 @@ public class VideoPlayer {
             e.printStackTrace();
         }
     }
+ 
 }
