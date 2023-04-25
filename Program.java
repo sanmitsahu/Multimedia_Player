@@ -1,7 +1,8 @@
 package cs576;
 import java.awt.image.BufferedImage;
 
-import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -18,6 +19,7 @@ import org.opencv.videoio.*;
 
 public class Program {	
 	public static void main(String[] args) {
+		String outFilename = "output.txt";
 		int width = 480;
 		int height = 270;
 		int numFrames = 8682;
@@ -32,8 +34,10 @@ public class Program {
 		
 		System.out.println("Start Processing...");
 		
-		ArrayList<Integer> shots = new ArrayList<Integer>();
+		List<Integer> shots = new ArrayList<Integer>();
+		List<Integer> scenes = new ArrayList<Integer>();
 		int shotCount = 0;
+		
 		
 		// Read the first frame
 		Mat currFrame = new Mat();
@@ -44,6 +48,7 @@ public class Program {
 		Imgproc.cvtColor(prevFrame, prevGray, Imgproc.COLOR_BGR2GRAY);
 		shots.add(1);
 		++shotCount;
+		scenes.add(1);
 		
 		// parameters... need tweaking
 		int windowLen = 15;
@@ -157,9 +162,11 @@ public class Program {
 					if(histTest <= histTestThreshold && transHistTest > 200)
 					{
 						System.out.println("!!!Transition histTest at " + frameId + ": " + transHistTest);
+						scenes.add(frameId);
 					}else if(histTest > histTestThreshold && transHistTest > 100)
 					{
 						System.out.println("!!!histTest at " + frameId + ": " + histTest);
+						scenes.add(frameId);
 					}
 					
 					lastShotHist = currHist.clone();
@@ -175,6 +182,34 @@ public class Program {
 
 		System.out.println("Finished processing... total number of frames: " + (int)capture.get(Videoio.CAP_PROP_POS_FRAMES));
 		capture.release();
+		
+		// Output to file
+		try {
+            FileWriter fw = new FileWriter(outFilename);
+            BufferedWriter writer = new BufferedWriter(fw);
+            System.out.print(scenes.size() + " " + shots.size());
+            writer.write(scenes.size() + " " + shots.size());
+            int j = 0;
+            for (int i = 0; i < shotCount; i++) {
+                if(j >= scenes.size() || shots.get(i) < scenes.get(j))
+                {
+                	System.out.print(shots.get(i) + " ");
+                	writer.write(shots.get(i) + " ");
+                }else {
+                	System.out.println();
+                	writer.newLine();
+                	System.out.print(scenes.get(j) + " ");
+                	writer.write(scenes.get(j) + " ");
+                	++j;
+                }
+            }
+            writer.close();
+            System.out.println("Finished writing results to " + outFilename);
+        } catch (IOException e) {
+            System.out.println("Error writing to file " + outFilename);
+            e.printStackTrace();
+        }
+		
 		System.exit(0);
 	}
 }
