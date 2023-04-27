@@ -13,6 +13,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 public class VideoPlayer{
+    static String input = "11 64 n 1 162 252 421 508 897 n 1081 1132 1179 1352 n 2332 2460 2583 2717 3148 3244 3263 n 3303 n 3547 3571 3621 3729 3737 3771 3848 3879 3991 4023 4053 4082 4129 4232 4347 4492 4724 n 4844 n 5600 5755 5952 6141 n 6303 6857 6969 n 7048 n 7458 7592 7669 7836 7840 7844 7877 7891 7900 7906 n 8081 8115 8178 8269 8290 8296 8302 8312 8369 8511";
+    static String[] inputParts = input.split(" ");
+    //System.out.println(inputParts[0]);
+    //System.out.println("Size of inputParts length"+ inputParts.length);
+    //input preprocessing
+    static int nscenes=Integer.parseInt(inputParts[0]), ntotal=Integer.parseInt(inputParts[1]);
     
     // default state - video playing
     static int isPause = 1;
@@ -28,7 +34,10 @@ public class VideoPlayer{
         int fps = 30; // frames per second of the video
         int numFrames = 6276; // number of frames in the video
         
-
+//System.out.println(input);
+//System.out.println(nscenes);
+//System.out.println(ntotal);
+//System.out.println("IP Length"+inputParts.length);
         // create the JFrame and JLabel to display the video
         JFrame frame = new JFrame("Video Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -42,7 +51,9 @@ public class VideoPlayer{
 
         // left container displaying video structure
         JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new FlowLayout());
+        //leftPanel.setLayout(new FlowLayout());
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+
 
         JTextArea textArea = new JTextArea(20, 20);
         JScrollPane scrollableTextArea = new JScrollPane(textArea);
@@ -98,16 +109,53 @@ public class VideoPlayer{
         //bottomPanel.add(skipButton);
 
 JButton jbSkip[];
-jbSkip = new JButton[10];
+jbSkip = new JButton[ntotal];
 JPanel buttonPanel = new JPanel();
 buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-for(int i1=5;i1<=50;i1+=5)
-{
-    jbSkip[(i1/5)-1] = new JButton("Skip "+i1+" seconds");
-    buttonPanel.add(jbSkip[(i1/5)-1]);
-    jbSkip[(i1/5)-1].setActionCommand(Integer.toString(i1));
-}
+Color color = new Color(255, 255, 255); // blue color
 
+//Border border = BorderFactory.createLineBorder(Color.WHITE, 2);
+int scene_counter = 1, shot_counter=1, button_counter=0;
+for(int i1=2;i1<inputParts.length;i1++)
+{
+    if(inputParts[i1].equals("n"))
+    {
+        shot_counter=1;
+        scene_counter++;
+        //System.out.println(inputParts[i1]+"scene start");
+    }
+    else
+    {
+        //System.out.println(((Object)inputParts[i1]).getClass().getSimpleName()+inputParts[i1]+"here"+i1);
+        if(inputParts[i1-1].equals("n"))
+        {
+            //scene
+            //scene_counter++;
+            jbSkip[button_counter] = new JButton("Scene"+scene_counter+"\n");
+            leftPanel.add(jbSkip[button_counter]);
+            jbSkip[button_counter].setActionCommand(Float.toString(Float.parseFloat(inputParts[i1])/30));
+            jbSkip[button_counter].setForeground(color);
+            jbSkip[button_counter].setForeground(new Color(0, 0, 0));
+            jbSkip[button_counter].setFont(new Font("Arial", Font.BOLD, 16));
+            //jbSkip[button_counter].addActionListener(skipActionListener);
+        }
+        else
+        {
+            //shot
+            jbSkip[button_counter] = new JButton("Scene"+scene_counter+" Shot"+shot_counter);
+            leftPanel.add(jbSkip[button_counter]);
+            jbSkip[button_counter].setActionCommand(Float.toString(Float.parseFloat(inputParts[i1])/30));
+            jbSkip[button_counter].setForeground(color);
+            jbSkip[button_counter].setForeground(new Color(0, 0, 0));
+            jbSkip[button_counter].setFont(new Font("Arial", Font.BOLD, 16));
+            //jbSkip[button_counter].addActionListener(skipActionListener);
+            shot_counter++;
+        }
+        button_counter++;
+    }
+    //System.out.println(button_counter+"Bcounter");
+    //jbSkip[(i1/5)-1].setPreferredSize(new Dimension(50, 100));
+}
 
         // right container style
         rightPanel.add(labImage, BorderLayout.NORTH);
@@ -119,18 +167,23 @@ for(int i1=5;i1<=50;i1+=5)
         
 
         //leftPanel.add(scrollableTextArea, BorderLayout.WEST);
-        leftPanel.add(buttonPanel);
-        JSeparator separator = new JSeparator(JSeparator.VERTICAL);
-        separator.setPreferredSize(new Dimension(100, 600));
-        leftPanel.add(separator);
-        leftPanel.add(rightPanel, BorderLayout.EAST);
+        JScrollPane scrollPane = new JScrollPane(leftPanel);
+        frame.getContentPane().add(scrollPane, BorderLayout.WEST);
 
-
+        //leftPanel.add(buttonPanel);
+        
+        //frame.getContentPane().add(scrollPane);
+        //JSeparator separator = new JSeparator(JSeparator.VERTICAL);
+        //separator.setPreferredSize(new Dimension(100, 600));
+        //leftPanel.add(separator);
+        frame.add(rightPanel, BorderLayout.EAST);
+    
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        frame.add(leftPanel, BorderLayout.WEST);
+        //frame.add(leftPanel, BorderLayout.WEST);
         //frame.add(separator);
-        
+                //frame.setSize(300, 300);
+
         frame.setVisible(true);
 
         
@@ -150,28 +203,6 @@ for(int i1=5;i1<=50;i1+=5)
                     e.printStackTrace();
                 }
 
-/*skipButton.addActionListener(new ActionListener() {
-    boolean printed=false;
-    public void actionPerformed(ActionEvent e) {
-        if(printed==false)
-            System.out.println(e.getActionCommand());
-        printed=true;
-        //String skipTimeStr = skipTimeField.getText();
-        
-        try {
-            String actionCommand = ((JButton) e.getSource()).getActionCommand();
-            System.out.println(actionCommand);
-
-            //String skipTimeStr="10";
-            int skipTime = Integer.parseInt(actionCommand);
-            int skipFrame = skipTime * fps;
-            long skipBytes = (long)skipFrame * width * height * 3;
-            channel.position(skipBytes);
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
-    }
-});*/
 // action listener for all buttons
 ActionListener skipActionListener = new ActionListener() {
     public void actionPerformed(ActionEvent e) {
@@ -182,8 +213,8 @@ ActionListener skipActionListener = new ActionListener() {
         //if (button == jbSkip5) {
             // skip 5 seconds
             try {
-                int skipFrame = Integer.parseInt(actionCommand) * fps;
-            long skipBytes = (long)skipFrame * width * height * 3;
+                double skipFrame = Float.parseFloat(actionCommand) * fps;
+            long skipBytes = (long)(skipFrame * width * height * 3);
             channel.position(skipBytes);
             } catch (IOException e1) {
                 e1.printStackTrace();
@@ -191,9 +222,9 @@ ActionListener skipActionListener = new ActionListener() {
         //}
     }
 };
-for(int i1=5;i1<=50;i1+=5)
+for(int k=0;k<button_counter;k++)
 {
-    jbSkip[(i1/5)-1].addActionListener(skipActionListener);
+    jbSkip[k].addActionListener(skipActionListener);
 }
 
                 // if video is stopped repaint frame to empty and re-position video start
@@ -241,20 +272,7 @@ for(int i1=5;i1<=50;i1+=5)
                 frame.repaint();
 
             } while (i < numFrames);
-            /*if (isPause == -1 ) {
-                try {
-                    channel.close();
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                }
-                try {
-                    raf.close();
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                }
-            }*/
+ 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
