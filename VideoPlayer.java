@@ -115,7 +115,7 @@ buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
 Color color = new Color(255, 255, 255); // blue color
 
 //Border border = BorderFactory.createLineBorder(Color.WHITE, 2);
-int scene_counter = 1, shot_counter=1, button_counter=0;
+int scene_counter = 0, shot_counter=1, button_counter=0;
 for(int i1=2;i1<inputParts.length;i1++)
 {
     if(inputParts[i1].equals("n"))
