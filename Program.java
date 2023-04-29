@@ -36,6 +36,9 @@ public class Program {
 		
 		List<Integer> shots = new ArrayList<Integer>();
 		List<Integer> scenes = new ArrayList<Integer>();
+		List<Integer> subshots = new ArrayList<Integer>();
+		List<Double> motionsInAShot = new ArrayList<Double>();
+		int frameCount = 0;
 		int shotCount = 0;
 		
 		
@@ -56,6 +59,7 @@ public class Program {
 		int maxLevel = 5;
 		TermCriteria criteria = new TermCriteria(TermCriteria.EPS + TermCriteria.COUNT, 100, 0.03);
 		double motionSqThreshold = 5000.0; // maximum motion magnitude square allowed
+		double subMoChanSqThreshold = 1000;
 		double noMatchRatioThreshold = 1; // not sure whether this is needed...might delete later
 		
 		// variables to hold motion vector results
@@ -90,10 +94,11 @@ public class Program {
 		boolean accumulate = false;
 		Mat prevHist = new Mat(), currHist = new Mat();
 		Mat lastShotHist = new Mat(); // Color Histograms of the first frame in the previous shot
+		Mat prevLastHist = new Mat(); // Color Histograms of the last frame in the previous shot
 		List<Mat> prevHSVList = Arrays.asList(prevHSV);
 		List<Mat> currHSVList = new ArrayList<>();
 		double histTest = 0.0;
-		double histTestThreshold = 100;
+		double histTestThreshold = 80;
 		
 		// compute color histogram for the first frame
 		Imgproc.calcHist(prevHSVList, new MatOfInt(channels), new Mat(), prevHist, new MatOfInt(histSize), new MatOfFloat(ranges), accumulate);
@@ -147,6 +152,11 @@ public class Program {
 			if(noMatchNum < prevPoints.rows()) {
 				avgMotionSq= totalMotionSq / (prevPoints.rows() - noMatchNum);
 			}
+			
+//			if(frameId > 1352 && frameId < 2332)
+//			{
+//				System.out.println("	frame " + frameId + " motion: " + avgMotionSq);
+//			}
 			if (avgMotionSq > motionSqThreshold)
 			{
 				currShotStart = frameId;
@@ -155,23 +165,77 @@ public class Program {
 					shots.add(currShotStart); // get current frame number and add to array 
 					++shotCount;
 					System.out.println("New shot at frame " + (int)capture.get(Videoio.CAP_PROP_POS_FRAMES));
-					prevShotStart = currShotStart;
-					
+					System.out.println("	motion " + avgMotionSq + ", hist " + histTest);					
+					// scene test with color histograms comparison
 					// check if the previous shot is a transition shot, which makes this shot in a new scene
 					double transHistTest = Imgproc.compareHist(lastShotHist, currHist, Imgproc.HISTCMP_CHISQR);
-					if(histTest <= histTestThreshold && transHistTest > 200)
+					if(histTest <= histTestThreshold && transHistTest > 150)
 					{
-						System.out.println("!!!Transition histTest at " + frameId + ": " + transHistTest);
+						System.out.println(" !!!Transition histTest at " + frameId + ": " + transHistTest);
 						scenes.add(frameId);
-					}else if(histTest > histTestThreshold && transHistTest > 100)
+					}else if(histTest > histTestThreshold && transHistTest > 30)
 					{
 						System.out.println("!!!histTest at " + frameId + ": " + histTest);
 						scenes.add(frameId);
 					}
+					// check for subshots based on motion slow or fast
+					boolean slow = motionsInAShot.get(0) > 3 ? false : true;
+					int ctnCount = 1, noiseCount = 0, maxNoiseCount = 20, minSubCount = 100;
+					int allCount = 1;
+					boolean isNewSubShot = true;
+					for(int i = 1; i < motionsInAShot.size(); ++i)
+					{
+						++allCount;
+						boolean currSlow = motionsInAShot.get(i) > 30 ? false: true;
+						if(slow == currSlow)
+						{
+							++ctnCount;
+							noiseCount = 0;
+							if(ctnCount >= minSubCount && isNewSubShot)
+							{
+								subshots.add(prevShotStart + i - allCount);
+								isNewSubShot = false;
+								System.out.println("-------Subshot at frame " + (prevShotStart + i - allCount));
+							}
+						}else {
+							++noiseCount;
+							if(noiseCount > maxNoiseCount)
+							{
+								slow = currSlow;
+								noiseCount = 0;
+								ctnCount = maxNoiseCount;
+								isNewSubShot = true;
+								allCount = maxNoiseCount;
+							}
+						}
+					}
 					
-					lastShotHist = currHist.clone();
+					prevShotStart = currShotStart;
+					prevLastHist = prevHist.clone();
+					motionsInAShot.clear();
+				}else if (currShotStart - scenes.get(scenes.size() - 1) > minShotInterval){ 
+					// prevent adding multiple shots where it takes several frames to transition
+					// will not add new shot, but needs to check if there is a new scene missed 
+					double additionalHistTest = Imgproc.compareHist(prevLastHist, currHist, Imgproc.HISTCMP_CHISQR);
+					double transHistTest = Imgproc.compareHist(lastShotHist, currHist, Imgproc.HISTCMP_CHISQR);
+					if(histTest > histTestThreshold || additionalHistTest > histTestThreshold)
+					{
+						System.out.println("!!!histTest at " + prevShotStart + ": " + histTest);
+						scenes.add(prevShotStart);
+					}else if(transHistTest > 150)
+					{
+						System.out.println("!!!TransitionHistTest at " + prevShotStart + ": " + transHistTest);
+						scenes.add(prevShotStart);
+					}
 				}
+				lastShotHist = currHist.clone();
 			}
+			else {
+				// if is continuous motion, meaning in the same shots, check if there is subshots
+				motionsInAShot.add(avgMotionSq);
+			}
+			
+			
 			
 			// update prevFrame to be used in the next iteration
 			//prevFrame = currFrame;
@@ -197,7 +261,8 @@ public class Program {
                 	writer.write(shots.get(i) + " ");
                 }else {
                 	System.out.println();
-                	writer.newLine();
+                	//writer.newLine();
+                	writer.write("n ");
                 	System.out.print(scenes.get(j) + " ");
                 	writer.write(scenes.get(j) + " ");
                 	++j;
