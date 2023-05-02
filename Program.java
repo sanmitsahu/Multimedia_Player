@@ -27,11 +27,13 @@ public class Program {
 		
 		// Open the video file
 		VideoCapture capture = new VideoCapture("InputVideo.mp4");
+		
 		if (!capture.isOpened()) {
 			System.out.println("Error: cannot open video file");
 			System.exit(1);
 		}
 		
+		System.out.println("fps: " + capture.get(Videoio.CAP_PROP_FPS));
 		System.out.println("Start Processing...");
 		
 		List<Integer> shots = new ArrayList<Integer>();
@@ -252,8 +254,8 @@ public class Program {
             FileWriter fw = new FileWriter(outFilename);
             BufferedWriter writer = new BufferedWriter(fw);
             System.out.print(scenes.size() + " " + shots.size());
-            writer.write(scenes.size() + " " + shots.size());
-            int j = 0;
+            writer.write(scenes.size() + " " + shots.size() + " ");
+            int j = 0, k = 0;
             for (int i = 0; i < shotCount; i++) {
                 if(j >= scenes.size() || shots.get(i) < scenes.get(j))
                 {
@@ -267,6 +269,15 @@ public class Program {
                 	writer.write(scenes.get(j) + " ");
                 	++j;
                 }
+               while(k < subshots.size() && subshots.get(k) - shots.get(i) < 60) {
+            	   ++k;
+               }
+            	   
+               if(k < subshots.size() && i < shotCount - 1 && shots.get(i + 1) - subshots.get(k) > 60)
+               {
+            	   System.out.print("(-" + subshots.get(k) + ") " );
+            	   writer.write("-" + subshots.get(k) + " ");
+               }
             }
             writer.close();
             System.out.println("Finished writing results to " + outFilename);
