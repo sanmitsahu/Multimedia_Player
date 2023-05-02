@@ -17,8 +17,7 @@ import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent;
 public class VideoPlayer extends JFrame {
     static String input = "11 64 n 1 162 252 421 508 897 n 1081 1132 1179 1352 n 2332 2460 2583 2717 3148 3244 3263 n 3303 n 3547 3571 3621 3729 3737 3771 3848 3879 3991 4023 4053 4082 4129 4232 4347 4492 4724 n 4844 n 5600 5755 5952 6141 n 6303 6857 6969 n 7048 n 7458 7592 7669 7836 7840 7844 7877 7891 7900 7906 n 8081 8115 8178 8269 8290 8296 8302 113000 143000 153000";
     static String[] inputParts = input.split(" ");
-    //System.out.println(inputParts[0]);
-    //System.out.println("Size of inputParts length"+ inputParts.length);
+    
     //input preprocessing
     static int nscenes=Integer.parseInt(inputParts[0]), ntotal=Integer.parseInt(inputParts[1]);
 
@@ -117,23 +116,31 @@ public class VideoPlayer extends JFrame {
                 shot_counter = 1;
                 scene_counter++;
             } else {
+            	JPanel shotPanel = new JPanel();
+            	
                 if (inputParts[i1 - 1].equals("n")) {
-                    jbSkip[button_counter] = new JButton("Scene" + scene_counter + "\n");
-                    leftPanel.add(jbSkip[button_counter]);
-                    jbSkip[button_counter].setActionCommand(Float.toString(Float.parseFloat(inputParts[i1])));
+                    shotPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+                	jbSkip[button_counter] = new JButton("Scene "+scene_counter + "\n");
+                    shotPanel.add(jbSkip[button_counter]);
+                   jbSkip[button_counter].setActionCommand(Float.toString(Float.parseFloat(inputParts[i1])/30*1000));
+                    //jbSkip[button_counter].setActionCommand("98000.00");
                     jbSkip[button_counter].setForeground(color);
                     jbSkip[button_counter].setForeground(new Color(0, 0, 0));
                     jbSkip[button_counter].setFont(new Font("Arial", Font.BOLD, 16));
                 } else {
                     // shot
-                    jbSkip[button_counter] = new JButton("Scene" + scene_counter + " Shot" + shot_counter);
-                    leftPanel.add(jbSkip[button_counter]);
-                    jbSkip[button_counter].setActionCommand(Float.toString(Float.parseFloat(inputParts[i1])));
+                	shotPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+                	JLabel shotLabel = new JLabel("   ");
+                    jbSkip[button_counter] = new JButton("Shot "+shot_counter);
+                    shotPanel.add(shotLabel);
+                    shotPanel.add(jbSkip[button_counter]);
+                    jbSkip[button_counter].setActionCommand(Float.toString(Float.parseFloat(inputParts[i1])/30*1000));
                     jbSkip[button_counter].setForeground(color);
                     jbSkip[button_counter].setForeground(new Color(0, 0, 0));
                     jbSkip[button_counter].setFont(new Font("Arial", Font.BOLD, 16));
                     shot_counter++;
                 }
+                leftPanel.add(shotPanel);
                 button_counter++;
             }
         }
@@ -151,10 +158,13 @@ public class VideoPlayer extends JFrame {
         ActionListener skipActionListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String actionCommand = ((JButton) e.getSource()).getActionCommand();
-
+                System.out.println(actionCommand);
                 // mediaplayer handles Video & Audio together
                 long skipTime = (long) Float.parseFloat(actionCommand);
+                //mediaPlayer.controls().setTime(skipTime);
                 mediaPlayerComponent.mediaPlayer().controls().setTime(skipTime);
+                //mediaPlayerComponent.getMediaPlayer().skip(skipTime);
+                //mediaPlayerComponent.getMediaPlayer().setTime(seekTimeInMillis);
                 mediaPlayerComponent.mediaPlayer().controls().play();
             }
         };
