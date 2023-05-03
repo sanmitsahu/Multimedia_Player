@@ -26,7 +26,7 @@ public class Program {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		
 		// Open the video file
-		VideoCapture capture = new VideoCapture("InputVideo.mp4");
+		VideoCapture capture = new VideoCapture("longDark.mp4");
 		
 		if (!capture.isOpened()) {
 			System.out.println("Error: cannot open video file");
@@ -60,7 +60,7 @@ public class Program {
 		Size windowSize = new Size(windowLen, windowLen);
 		int maxLevel = 5;
 		TermCriteria criteria = new TermCriteria(TermCriteria.EPS + TermCriteria.COUNT, 100, 0.03);
-		double motionSqThreshold = 5000.0; // maximum motion magnitude square allowed
+		double motionSqThreshold = 6000.0; // maximum motion magnitude square allowed
 		double subMoChanSqThreshold = 1000;
 		double noMatchRatioThreshold = 1; // not sure whether this is needed...might delete later
 		
@@ -159,7 +159,7 @@ public class Program {
 //			{
 //				System.out.println("	frame " + frameId + " motion: " + avgMotionSq);
 //			}
-			if (avgMotionSq > motionSqThreshold)
+			if (avgMotionSq > motionSqThreshold && (frameId - prevShotStart < minShotInterval || frameId - prevShotStart > 20))
 			{
 				currShotStart = frameId;
 				if(currShotStart - prevShotStart > minShotInterval)
@@ -250,23 +250,28 @@ public class Program {
 		capture.release();
 		
 		// Output to file
+		String outStr = "";
+		int subCount = 0;
 		try {
             FileWriter fw = new FileWriter(outFilename);
             BufferedWriter writer = new BufferedWriter(fw);
             System.out.print(scenes.size() + " " + shots.size());
-            writer.write(scenes.size() + " " + shots.size() + " ");
+            //writer.write(scenes.size() + " " + shots.size() + " ");
             int j = 0, k = 0;
             for (int i = 0; i < shotCount; i++) {
                 if(j >= scenes.size() || shots.get(i) < scenes.get(j))
                 {
                 	System.out.print(shots.get(i) + " ");
-                	writer.write(shots.get(i) + " ");
+                	//writer.write(shots.get(i) + " ");
+                	outStr += shots.get(i) + " ";
                 }else {
                 	System.out.println();
                 	//writer.newLine();
-                	writer.write("n ");
+                	//writer.write("n ");
+                	outStr += "n ";
                 	System.out.print(scenes.get(j) + " ");
-                	writer.write(scenes.get(j) + " ");
+                	//writer.write(scenes.get(j) + " ");
+                	outStr += scenes.get(j) + " ";
                 	++j;
                 }
                while(k < subshots.size() && subshots.get(k) - shots.get(i) < 60) {
@@ -276,9 +281,14 @@ public class Program {
                if(k < subshots.size() && i < shotCount - 1 && shots.get(i + 1) - subshots.get(k) > 60)
                {
             	   System.out.print("(-" + subshots.get(k) + ") " );
-            	   writer.write("-" + subshots.get(k) + " ");
+            	   //writer.write("-" + subshots.get(k) + " ");
+            	   outStr += "-" + subshots.get(k) + " ";
+            	   ++subCount;
                }
             }
+            
+            String counters = scenes.size() + " " + shots.size() + " " + subCount + " ";
+            writer.write(counters + outStr);
             writer.close();
             System.out.println("Finished writing results to " + outFilename);
         } catch (IOException e) {
