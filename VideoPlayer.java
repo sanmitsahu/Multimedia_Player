@@ -248,15 +248,7 @@ public class VideoPlayer extends JFrame {
 
     //	initialize content pane and control pane
     public void initialize() {
-        this.setBounds(100, 100, 600, 400);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                mediaPlayerComponent.release();
-                System.exit(0);
-            }
-        });
+
 
         contentPane.setLayout(new BorderLayout());
         contentPane.add(mediaPlayerComponent, BorderLayout.CENTER);
