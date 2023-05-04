@@ -1,3 +1,5 @@
+package cs576;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -22,17 +24,19 @@ public class VideoPlayer extends JFrame {
     static int currentFrameWidth = 0;
     static int currentFrameHeight = 0;
     private static final long serialVersionUID = 1L;
-    private static final String VIDEO_PATH = "/Users/sanmitsahu/IdeaProjects/First/src/InputVideo.mp4";
+    private static final String VIDEO_PATH = "longDark.mp4";
     static final CallbackMediaPlayerComponent mediaPlayerComponent = new CallbackMediaPlayerComponent();
     private JButton playButton;
     private JButton pauseButton;
     private JButton stopButton;
     static JPanel contentPane = new JPanel();
-
+    
+    static boolean hasJumped = false; // used to track current scene/shot
+  
     public static void main(String[] args) throws FileNotFoundException {
         String file_input = "";
         try {
-            File myObj = new File("/Users/sanmitsahu/IdeaProjects/First/src/output.txt");
+            File myObj = new File("longDark.txt");
             Scanner myReader = new Scanner(myObj);
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
@@ -73,7 +77,7 @@ public class VideoPlayer extends JFrame {
         } catch (Exception e) {
             System.out.println(e);
         }
-
+        
         VideoPlayer myVideoPlayer = new VideoPlayer();
 
         // to initialize content pane and control pane
@@ -145,6 +149,7 @@ public class VideoPlayer extends JFrame {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
         Color color = new Color(255, 255, 255);
+        Color highlight = new Color(200, 150, 160);
 
         int scene_counter = 0, shot_counter = 1, button_counter = 0, subshot_counter = 1;
         for (int i1 = 3; i1 < inputParts.length; i1++) {
@@ -237,18 +242,104 @@ public class VideoPlayer extends JFrame {
                 //mediaPlayerComponent.getMediaPlayer().skip(skipTime);
                 //mediaPlayerComponent.getMediaPlayer().setTime(seekTimeInMillis);
                 mediaPlayerComponent.mediaPlayer().controls().play();
+                
+                hasJumped = true;
             }
         };
 
         for (int k = 0; k < button_counter; k++) {
             jbSkip[k].addActionListener(skipActionListener);
         }
-
+        
+        int currScene = -1;
+        int currShot = -1;
+        long currTime = 0;
+        long prevTime = 0;
+        while(true)
+        {
+        	if(hasJumped)
+        	{
+        		// need to un-highlight buttons
+        		if(currScene >= 0 && currScene < button_counter)
+        		{
+        			jbSkip[currScene].setForeground(color.black);
+        		}
+        		if(currShot >= 0 && currShot < button_counter)
+        		{
+        			jbSkip[currShot].setForeground(color.black);
+        		}
+        		currScene = -1;
+        		currShot = -1;
+        		hasJumped = false;
+        	}
+        	
+        	// get current video time
+        	currTime = mediaPlayerComponent.mediaPlayer().status().time();
+        	if(currTime < 0 || currTime == prevTime)
+        	{
+        		continue;
+        	}
+        	
+        	// get corresponding button id
+        	// if previous button id is not available
+        	if(currScene < 0 || currShot < 0)
+        	{
+        		long currSkipTime = 0, prevSkipTime = 0;
+        		currScene = 0;
+        		boolean found = false;
+        		for(int k = 1; k < button_counter; ++k)
+        		{
+        			currSkipTime = (long) Float.parseFloat(jbSkip[k].getActionCommand());
+        			if(currSkipTime == prevSkipTime)
+        			{
+        				// if a new scene
+        				currScene = k - 1;
+        			}
+        			if(currSkipTime > currTime)
+        			{
+        				currShot = k - 1;
+        				found = true;
+        				break;
+        			}
+        			prevSkipTime = currSkipTime;
+        		}
+        		if(!found) currShot = button_counter - 1;
+        	}else // else, search from previous button id
+        	{
+        		if(currShot < button_counter - 1) {
+        			long currSkipTime =(long) Float.parseFloat(jbSkip[currShot].getActionCommand());
+            		long nextSkipTime = (long) Float.parseFloat(jbSkip[currShot + 1].getActionCommand());
+            		if(currTime >= nextSkipTime) {
+            			// need to update button highlight
+            			jbSkip[currShot].setForeground(Color.black);
+            			++currShot;
+            			if(currShot < button_counter - 1 && (long) Float.parseFloat(jbSkip[currShot + 1].getActionCommand()) == nextSkipTime)
+            			{
+            				jbSkip[currScene].setForeground(color.black);
+            				currScene = currShot;
+            				++currShot;
+            			}
+            		}
+        		}
+        	}
+        	// apply highlight
+        	jbSkip[currShot].setForeground(highlight);
+        	jbSkip[currScene].setForeground(highlight);
+        	prevTime = currTime;
+        }
     }
 
     //	initialize content pane and control pane
     public void initialize() {
-
+//        this.setBounds(100, 100, 600, 400);
+//        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//        this.addWindowListener(new WindowAdapter() {
+//            @Override
+//            public void windowClosing(WindowEvent e) {
+//                mediaPlayerComponent.release();
+//                System.exit(0);
+//            }
+//        });
 
         contentPane.setLayout(new BorderLayout());
         contentPane.add(mediaPlayerComponent, BorderLayout.CENTER);
@@ -265,6 +356,7 @@ public class VideoPlayer extends JFrame {
         playButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 mediaPlayerComponent.mediaPlayer().controls().play();
+                //hasJumped = true;
             }
         });
 
@@ -278,6 +370,7 @@ public class VideoPlayer extends JFrame {
         stopButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 mediaPlayerComponent.mediaPlayer().controls().stop();
+                hasJumped = true;
 
             }
         });
